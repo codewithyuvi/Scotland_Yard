@@ -34,9 +34,12 @@ interface PawnProps {
   y: number;
   size: number;
   color: string;
+  isVisible?: boolean; // new prop
 }
 
-const Pawn: React.FC<PawnProps> = ({ x, y, size, color }) => {
+const Pawn: React.FC<PawnProps> = ({ x, y, size, color, isVisible = true }) => {
+  if (!isVisible) return null; // don't render when invisible
+
   return (
     <div
       style={{

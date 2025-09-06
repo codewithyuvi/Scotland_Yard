@@ -131,9 +131,9 @@ const EDGES: Record<number, number[]> = {
   20: [19],
 };
 
-// initial pawn states (different colors, all starting at node 1 for simplicity)
+// initial pawn states
 const INITIAL_PAWNS = [
-  { id: 0, position: 1, color: "red" },
+  { id: 0, position: 1, color: "red" },    // Mr. X
   { id: 1, position: 2, color: "blue" },
   { id: 2, position: 3, color: "green" },
   { id: 3, position: 4, color: "orange" },
@@ -141,15 +141,20 @@ const INITIAL_PAWNS = [
   { id: 5, position: 6, color: "yellow" },
 ];
 
+// Mr. X reveal turns
+const REVEAL_TURNS = [3, 8, 13, 18, 24];
+
 const ResponsiveMap: React.FC = () => {
   const mapRef = useRef<HTMLImageElement | null>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   const [pawns, setPawns] = useState(INITIAL_PAWNS);
-  const [currentTurn, setCurrentTurn] = useState(0); // whose turn it is
+  const [currentTurn, setCurrentTurn] = useState(0);
   const [neighborNodes, setNeighborNodes] = useState<number[]>(
     EDGES[INITIAL_PAWNS[0].position] || []
   );
+
+  const [mrXMoves, setMrXMoves] = useState(0); // count Mr. X moves
 
   const updateDimensions = () => {
     if (mapRef.current) {
@@ -180,10 +185,15 @@ const ResponsiveMap: React.FC = () => {
         )
       );
 
-      // update neighbors for the new position
+      // if Mr. X moved, increase move counter
+      if (currentTurn === 0) {
+        setMrXMoves((prev) => prev + 1);
+      }
+
+      // update neighbors for new position
       setNeighborNodes(EDGES[id] || []);
 
-      // move to next player's turn
+      // next player's turn
       setCurrentTurn((prev) => (prev + 1) % pawns.length);
     }
   };
@@ -193,7 +203,12 @@ const ResponsiveMap: React.FC = () => {
 
   return (
     <div
-      style={{ position: "relative", width: "800px", maxWidth: "100%", margin: "0 auto" }}
+      style={{
+        position: "relative",
+        width: "800px",
+        maxWidth: "100%",
+        margin: "0 auto",
+      }}
     >
       <img
         ref={mapRef}
@@ -206,7 +221,6 @@ const ResponsiveMap: React.FC = () => {
       {NODES.map((node) => {
         let color = "red";
 
-        // check if the active pawn is here
         const activePawn = pawns[currentTurn];
         if (activePawn.position === node.id) color = "green";
         else if (neighborNodes.includes(node.id)) color = "yellow";
@@ -225,16 +239,23 @@ const ResponsiveMap: React.FC = () => {
         );
       })}
 
-      {/* render all pawns */}
-      {pawns.map((pawn) => (
-        <Pawn
-          key={pawn.id}
-          x={NODES.find((n) => n.id === pawn.position)!.x * dimensions.width}
-          y={NODES.find((n) => n.id === pawn.position)!.y * dimensions.height}
-          size={pawnSize}
-          color={pawn.color}
-        />
-      ))}
+      {/* render pawns */}
+      {pawns.map((pawn, idx) => {
+        const isMrX = idx === 0;
+        const isVisible =
+          !isMrX || REVEAL_TURNS.includes(mrXMoves); // Mr. X only visible on reveal turns
+
+        return (
+          <Pawn
+            key={pawn.id}
+            x={NODES.find((n) => n.id === pawn.position)!.x * dimensions.width}
+            y={NODES.find((n) => n.id === pawn.position)!.y * dimensions.height}
+            size={pawnSize}
+            color={pawn.color}
+            isVisible={isVisible}
+          />
+        );
+      })}
 
       {/* turn indicator */}
       <div
@@ -248,7 +269,7 @@ const ResponsiveMap: React.FC = () => {
           border: "1px solid gray",
         }}
       >
-        🎲 Player {currentTurn + 1}'s Turn ({pawns[currentTurn].color})
+        Player {currentTurn + 1}'s Turn ({pawns[currentTurn].color})
       </div>
     </div>
   );
